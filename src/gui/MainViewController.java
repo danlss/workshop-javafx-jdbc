@@ -3,6 +3,7 @@ package gui;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 import application.Main;
 import gui.util.Alerts;
@@ -34,13 +35,17 @@ public class MainViewController implements Initializable {
 	
 	@FXML
 	public void onMenuItemDepartmentAction() {
-		loadView2("/gui/DepartmentList.fxml");
+		loadView("/gui/DepartmentList.fxml",
+				(DepartmentListController controller) ->{
+					controller.setDepartmentService(new DepartmentService());
+					controller.updateTableView();
+				});
 		
 	}
 	
 	@FXML
 	public void onMenuItemAboutAction() {
-		loadView("/gui/About.fxml");
+		loadView("/gui/About.fxml", x -> {});
 	}
 	
 	@Override
@@ -50,7 +55,7 @@ public class MainViewController implements Initializable {
 	}
 	
 	//abre outra tela
-	private synchronized void loadView(String absoluteName) {
+	private synchronized <T> void loadView(String absoluteName, Consumer<T> initializingAction) {
 		
 		try {
 			//carregar outra tela [/gui/About.fxml]
@@ -81,6 +86,11 @@ public class MainViewController implements Initializable {
 			mainVBox.getChildren().addAll(newVBox.getChildren());
 			
 			/* MANIPULA A CENA PRINCIPAL INCLUINDO NELA ALEM DO MENU PRINCIPAL, OS FILHOS DA JANELA QUE ESTIVER ABRINDO */
+			
+			//ativar Consumer e retornar controller do tipo passado
+			T controller =  loader.getController();
+			initializingAction.accept(controller);
+			//AS DUAS LINHAS ACIMA EXECUTAM A FUNÇÃO QUE FOR PASSADA COMO ARGUMENTO
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -88,48 +98,4 @@ public class MainViewController implements Initializable {
 		}
 	}
 	
-private synchronized void loadView2(String absoluteName) {
-		
-		try {
-			//carregar outra tela [/gui/About.fxml]
-			FXMLLoader loader = new FXMLLoader(getClass().getResource(absoluteName));
-			//carrega uma nova VBox
-			VBox newVBox = loader.load();
-			
-			//referencia da cena para trabalhar com a janela principal
-			Scene mainScene = Main.getMainScene();
-			//referencia VBox da janela principal
-			VBox mainVBox = (VBox) ((ScrollPane) mainScene.getRoot()).getContent(); //pega o primeiro elemento da view (ScrollPane)
-			//getContent já é uma referencia ao que existe dentro da scrollPane [VBox]
-			
-			
-			/*   ACRESCENTA NOS FILHOS DO VBOX OS FILHOS DO VBOX DA JANELA ABOUT   
-			 * PRESERVA O MENUBAR
-			 * EXCLUI OS FILHOS DO VBOX
-			 * INCLUIR O MENUBAR
-			 * INCLUIR OS FILHOS DO VBOX DA JANELA ABOUT*/
-			
-			//referencia para o menu (primeiro filho do VBox da janela principal)
-			Node mainMenu = mainVBox.getChildren().get(0);
-			//limpar todos os filhos de mainVBox
-			mainVBox.getChildren().clear();
-			//add filhos de mainMenu
-			mainVBox.getChildren().add(mainMenu);
-			//add filhos de newVBox [Coleçao]
-			mainVBox.getChildren().addAll(newVBox.getChildren());
-			
-			/* MANIPULA A CENA PRINCIPAL INCLUINDO NELA ALEM DO MENU PRINCIPAL, OS FILHOS DA JANELA QUE ESTIVER ABRINDO */
-			
-			//referencia para o controller
-			DepartmentListController controller = loader.getController();
-			//injeçao de dependencia do service no controller
-			controller.setDepartmentService(new DepartmentService());
-			//atualiza os dados na tela da table view
-			controller.updateTableView();
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			Alerts.showAlert("IO Exception", "Error loading view", e.getMessage(), AlertType.ERROR);
-		}
-	}
 }
