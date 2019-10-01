@@ -15,6 +15,7 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.VBox;
+import model.services.DepartmentService;
 
 public class MainViewController implements Initializable {
 	
@@ -33,7 +34,7 @@ public class MainViewController implements Initializable {
 	
 	@FXML
 	public void onMenuItemDepartmentAction() {
-		loadView("/gui/DepartmentList.fxml");
+		loadView2("/gui/DepartmentList.fxml");
 		
 	}
 	
@@ -80,6 +81,51 @@ public class MainViewController implements Initializable {
 			mainVBox.getChildren().addAll(newVBox.getChildren());
 			
 			/* MANIPULA A CENA PRINCIPAL INCLUINDO NELA ALEM DO MENU PRINCIPAL, OS FILHOS DA JANELA QUE ESTIVER ABRINDO */
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			Alerts.showAlert("IO Exception", "Error loading view", e.getMessage(), AlertType.ERROR);
+		}
+	}
+	
+private synchronized void loadView2(String absoluteName) {
+		
+		try {
+			//carregar outra tela [/gui/About.fxml]
+			FXMLLoader loader = new FXMLLoader(getClass().getResource(absoluteName));
+			//carrega uma nova VBox
+			VBox newVBox = loader.load();
+			
+			//referencia da cena para trabalhar com a janela principal
+			Scene mainScene = Main.getMainScene();
+			//referencia VBox da janela principal
+			VBox mainVBox = (VBox) ((ScrollPane) mainScene.getRoot()).getContent(); //pega o primeiro elemento da view (ScrollPane)
+			//getContent já é uma referencia ao que existe dentro da scrollPane [VBox]
+			
+			
+			/*   ACRESCENTA NOS FILHOS DO VBOX OS FILHOS DO VBOX DA JANELA ABOUT   
+			 * PRESERVA O MENUBAR
+			 * EXCLUI OS FILHOS DO VBOX
+			 * INCLUIR O MENUBAR
+			 * INCLUIR OS FILHOS DO VBOX DA JANELA ABOUT*/
+			
+			//referencia para o menu (primeiro filho do VBox da janela principal)
+			Node mainMenu = mainVBox.getChildren().get(0);
+			//limpar todos os filhos de mainVBox
+			mainVBox.getChildren().clear();
+			//add filhos de mainMenu
+			mainVBox.getChildren().add(mainMenu);
+			//add filhos de newVBox [Coleçao]
+			mainVBox.getChildren().addAll(newVBox.getChildren());
+			
+			/* MANIPULA A CENA PRINCIPAL INCLUINDO NELA ALEM DO MENU PRINCIPAL, OS FILHOS DA JANELA QUE ESTIVER ABRINDO */
+			
+			//referencia para o controller
+			DepartmentListController controller = loader.getController();
+			//injeçao de dependencia do service no controller
+			controller.setDepartmentService(new DepartmentService());
+			//atualiza os dados na tela da table view
+			controller.updateTableView();
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
