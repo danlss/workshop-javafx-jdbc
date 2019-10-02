@@ -8,6 +8,7 @@ import java.util.ResourceBundle;
 import com.sun.javafx.scene.control.skin.Utils;
 
 import application.Main;
+import gui.listeners.DataChangeListener;
 import gui.util.Alerts;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -27,7 +28,9 @@ import javafx.stage.Stage;
 import model.entities.Department;
 import model.services.DepartmentService;
 
-public class DepartmentListController implements Initializable{
+//classe que recebe o evento emitido pela classe FormController (observer)
+
+public class DepartmentListController implements Initializable, DataChangeListener{
 
 	private DepartmentService service;
 	//referencias componentes de tela
@@ -103,6 +106,11 @@ public class DepartmentListController implements Initializable{
 			controller.setDepartment(obj);
 			//injeçao dependencia departmentService
 			controller.setDerpartmentService(new DepartmentService());
+			
+			//escuta o evento do método [this = este objeto desta classe]
+			//se inscreve para receber o evento e quando o evento for disparado executa o metodo da interface
+			controller.subscribeDataChangeListener(this); 
+			
 			//carregar os dados de obj no form
 			controller.updateFormData();
 			
@@ -120,6 +128,13 @@ public class DepartmentListController implements Initializable{
 		catch(IOException e) {
 			Alerts.showAlert("IO Exception", "Error loading view", e.getMessage(), AlertType.ERROR);
 		}
+	}
+
+	@Override
+	//atualizar os dados da tabela quando escutar que foram alterados
+	public void onDataChanged() {
+		updateTableView();
+		
 	}
 
 }

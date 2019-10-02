@@ -1,9 +1,12 @@
 package gui;
 
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ResourceBundle;
 
 import db.DbException;
+import gui.listeners.DataChangeListener;
 import gui.util.Alerts;
 import gui.util.Constraints;
 import gui.util.Utils;
@@ -23,6 +26,9 @@ public class DepartmentFormController implements Initializable {
 	private Department entity;
 
 	private DepartmentService service;
+	
+	//lista de objetos que implementam a interface
+	private List<DataChangeListener> dataChangeListeners = new ArrayList<>();
 
 	@FXML
 	private TextField txtId;
@@ -47,6 +53,10 @@ public class DepartmentFormController implements Initializable {
 	public void setDerpartmentService(DepartmentService service) {
 		this.service = service;
 	}
+	
+	public void subscribeDataChangeListener(DataChangeListener listener) {
+		dataChangeListeners.add(listener);
+	}
 
 	// botao salvar departamento no BD
 	public void onBtSaveAction(ActionEvent event) {
@@ -63,6 +73,8 @@ public class DepartmentFormController implements Initializable {
 			entity = getFormData();
 			service.saveOrUpdate(entity);
 			
+			notifyDataChangeListeners();
+			
 			//fechar janelinha após salvar
 			Utils.currentStage(event).close(); //pega referencia da janela e fecha
 		}
@@ -70,6 +82,11 @@ public class DepartmentFormController implements Initializable {
 			Alerts.showAlert("Error saving object", null, e.getMessage(), Alert.AlertType.ERROR);
 		}
 
+	}
+
+	//executa o método onDataChanged da interface em cada um dos listeners
+	private void notifyDataChangeListeners() {
+			dataChangeListeners.forEach(listener -> listener.onDataChanged());
 	}
 
 	// pega os dados do form e retorna novo obj
