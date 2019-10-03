@@ -3,7 +3,9 @@ package gui;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 import db.DbException;
 import gui.listeners.DataChangeListener;
@@ -18,6 +20,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import model.entities.Department;
+import model.exceptions.ValidationException;
 import model.services.DepartmentService;
 
 public class DepartmentFormController implements Initializable {
@@ -26,8 +29,8 @@ public class DepartmentFormController implements Initializable {
 	private Department entity;
 
 	private DepartmentService service;
-	
-	//lista de objetos que implementam a interface
+
+	// lista de objetos que implementam a interface
 	private List<DataChangeListener> dataChangeListeners = new ArrayList<>();
 
 	@FXML
@@ -53,7 +56,7 @@ public class DepartmentFormController implements Initializable {
 	public void setDerpartmentService(DepartmentService service) {
 		this.service = service;
 	}
-	
+
 	public void subscribeDataChangeListener(DataChangeListener listener) {
 		dataChangeListeners.add(listener);
 	}
@@ -72,11 +75,14 @@ public class DepartmentFormController implements Initializable {
 		try {
 			entity = getFormData();
 			service.saveOrUpdate(entity);
-			
+
 			notifyDataChangeListeners();
-			
-			//fechar janelinha após salvar
-			Utils.currentStage(event).close(); //pega referencia da janela e fecha
+
+			// fechar janelinha após salvar
+			Utils.currentStage(event).close(); // pega referencia da janela e fecha
+		}
+		catch(ValidationException e){
+			setErrorMessages(e.getErrors());
 		}
 		catch (DbException e) {
 			Alerts.showAlert("Error saving object", null, e.getMessage(), Alert.AlertType.ERROR);
@@ -84,23 +90,35 @@ public class DepartmentFormController implements Initializable {
 
 	}
 
-	//executa o método onDataChanged da interface em cada um dos listeners
+	// executa o método onDataChanged da interface em cada um dos listeners
 	private void notifyDataChangeListeners() {
-			dataChangeListeners.forEach(listener -> listener.onDataChanged());
+		dataChangeListeners.forEach(listener -> listener.onDataChanged());
 	}
 
 	// pega os dados do form e retorna novo obj
 	private Department getFormData() {
 		Department obj = new Department();
 
+		// Instanciando exception
+		ValidationException exception = new ValidationException("Validation Error");
+
 		obj.setId(Utils.tryParseToInt(txtId.getText()));
+
+		if (txtName.getText() == null || txtName.getText().trim().equals("")) {
+			exception.addError("name", "Campo não pode ser vazio");
+		}
 		obj.setName(txtName.getText());
+		
+		//se na coleção de erros tiver pelo menos um erro
+		if(exception.getErrors().size() > 0) {
+			throw exception;
+		}
 
 		return obj;
 	}
 
 	public void onBtCancelAction(ActionEvent event) {
-		Utils.currentStage(event).close(); //pega referencia da janela e fecha
+		Utils.currentStage(event).close(); // pega referencia da janela e fecha
 	}
 
 	@Override
@@ -121,6 +139,14 @@ public class DepartmentFormController implements Initializable {
 		}
 		txtId.setText(String.valueOf(entity.getId()));
 		txtName.setText(entity.getName());
+	}
+	
+	private void setErrorMessages(Map<String, String> errors) {
+		Set<String> fields = errors.keySet();
+		
+		if(fields.contains("name")) {
+			labelErrorName.setText(errors.get("name"));
+		}
 	}
 
 }

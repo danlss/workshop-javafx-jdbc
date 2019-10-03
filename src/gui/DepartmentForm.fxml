@@ -52,6 +52,9 @@
                <font>
                   <Font name="System Bold" size="12.0" />
                </font>
+               <GridPane.margin>
+                  <Insets left="10.0" />
+               </GridPane.margin>
             </Label>
             <HBox prefHeight="100.0" prefWidth="200.0" spacing="20.0" GridPane.columnIndex="1" GridPane.rowIndex="2">
                <children>
