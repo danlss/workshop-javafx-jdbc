@@ -3,11 +3,11 @@ package gui;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.Optional;
 import java.util.ResourceBundle;
 
-import com.sun.javafx.scene.control.skin.Utils;
-
 import application.Main;
+import db.DbIntegrityException;
 import gui.listeners.DataChangeListener;
 import gui.util.Alerts;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -18,8 +18,10 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -29,7 +31,6 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import model.entities.Department;
 import model.services.DepartmentService;
-import gui.util.*;
 
 //classe que recebe o evento emitido pela classe FormController (observer)
 
@@ -45,6 +46,8 @@ public class DepartmentListController implements Initializable, DataChangeListen
 	private TableColumn<Department, String> tableColumnName;
 	@FXML
 	private TableColumn<Department, Department> tableColumnEDIT;
+	@FXML
+	TableColumn<Department, Department> tableColumnREMOVE;
 	@FXML
 	private Button btNew;
 
@@ -91,9 +94,12 @@ public class DepartmentListController implements Initializable, DataChangeListen
 		List<Department> list = service.findAll();
 		obsList = FXCollections.observableArrayList(list);
 		tableViewDepartment.setItems(obsList);
+
+		// acrescenta um botao com o texto 'edit' em cada linha da tabela
+		initEditButtons(); // quando clicado abrirá uma janela de edição
 		
-		//acrescenta um botao com o texto 'edit' em cada linha da tabela
-		initEditButtons(); //quando clicado abrirá uma janela de edição
+		//acrescenta um botao com o texto 'remove' em cada linha da tabela
+		initRemoveButtons(); //quando clicado abrirá uma janela de confirmação
 	}
 
 	// janelinha de dialogo
@@ -141,8 +147,8 @@ public class DepartmentListController implements Initializable, DataChangeListen
 		updateTableView();
 
 	}
-	
-	//função para implementação de edição dos itens
+
+	// função para implementação de edição dos itens
 	private void initEditButtons() {
 		tableColumnEDIT.setCellValueFactory(param -> new ReadOnlyObjectWrapper<>(param.getValue()));
 		tableColumnEDIT.setCellFactory(param -> new TableCell<Department, Department>() {
@@ -160,6 +166,44 @@ public class DepartmentListController implements Initializable, DataChangeListen
 						event -> createDialogForm(obj, "/gui/DepartmentForm.fxml", gui.util.Utils.currentStage(event)));
 			}
 		});
+	}
+
+	private void initRemoveButtons() {
+		tableColumnREMOVE.setCellValueFactory(param -> new ReadOnlyObjectWrapper<>(param.getValue()));
+		tableColumnREMOVE.setCellFactory(param -> new TableCell<Department, Department>() {
+			private final Button button = new Button("remove");
+
+			@Override
+			protected void updateItem(Department obj, boolean empty) {
+				super.updateItem(obj, empty);
+				if (obj == null) {
+					setGraphic(null);
+					return;
+				}
+				setGraphic(button);
+				button.setOnAction(event -> removeEntity(obj));
+			}
+		});
+	}
+
+	// remoção de departamento
+	private void removeEntity(Department obj) {
+		Optional<ButtonType> result = Alerts.showConfirmation("Confirmation", "Tem certeza que quer deletar?");
+		
+		if(result.get() == ButtonType.OK) {
+			if(service == null) {
+				throw new IllegalStateException("Service was null");
+			}
+			try {
+			//remove
+			service.remove(obj);
+			//atualiza
+			updateTableView();
+			}
+			catch(DbIntegrityException e) {
+				Alerts.showAlert("Error ao remover", null, e.getMessage(), Alert.AlertType.ERROR);
+			}
+		}
 	}
 
 }
