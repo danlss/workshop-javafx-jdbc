@@ -1,8 +1,11 @@
 package gui;
 
 import java.net.URL;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -17,6 +20,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import model.entities.Seller;
@@ -40,7 +44,23 @@ public class SellerFormController implements Initializable {
 	private TextField txtName;
 
 	@FXML
+	private TextField txtEmail;
+
+	@FXML
+	private DatePicker dpBirthDate;
+
+	@FXML
+	private TextField txtBaseSalary;
+
+	@FXML
 	private Label labelErrorName;
+
+	@FXML
+	private Label labelErrorEmail;
+	@FXML
+	private Label labelErrorBirthDate;
+	@FXML
+	private Label labelErrorBaseSalary;
 
 	@FXML
 	private Button btSave;
@@ -80,11 +100,9 @@ public class SellerFormController implements Initializable {
 
 			// fechar janelinha após salvar
 			Utils.currentStage(event).close(); // pega referencia da janela e fecha
-		}
-		catch(ValidationException e){
+		} catch (ValidationException e) {
 			setErrorMessages(e.getErrors());
-		}
-		catch (DbException e) {
+		} catch (DbException e) {
 			Alerts.showAlert("Error saving object", null, e.getMessage(), Alert.AlertType.ERROR);
 		}
 
@@ -108,9 +126,9 @@ public class SellerFormController implements Initializable {
 			exception.addError("name", "Campo não pode ser vazio");
 		}
 		obj.setName(txtName.getText());
-		
-		//se na coleção de erros tiver pelo menos um erro
-		if(exception.getErrors().size() > 0) {
+
+		// se na coleção de erros tiver pelo menos um erro
+		if (exception.getErrors().size() > 0) {
 			throw exception;
 		}
 
@@ -129,22 +147,35 @@ public class SellerFormController implements Initializable {
 
 	private void initializeNodes() {
 		Constraints.setTextFieldInteger(txtId);
-		Constraints.setTextFieldMaxLength(txtName, 30);
+		Constraints.setTextFieldMaxLength(txtName, 50);
+		Constraints.setTextFieldDouble(txtBaseSalary);
+		Constraints.setTextFieldMaxLength(txtEmail, 60);
+		Utils.formatDatePicker(dpBirthDate, "dd/MM/yyyy");
 	}
 
 	// exibe nas caixas de texto os atributos do departamento
 	public void updateFormData() {
+		// pega os dados do objeto e joga nas caixinhas do formularios
 		if (entity == null) {
 			throw new IllegalStateException("Entity was null");
 		}
 		txtId.setText(String.valueOf(entity.getId()));
 		txtName.setText(entity.getName());
+		txtEmail.setText(entity.getEmail());
+
+		// garantir . ao inves de ,
+		Locale.setDefault(Locale.US);
+		txtBaseSalary.setText(String.format("%.2f", entity.getBaseSalary()));
+
+		// exibe data local no fuso-horario do usuario (formato)
+		if (entity.getBirthDate() != null)
+			dpBirthDate.setValue(LocalDate.ofInstant(entity.getBirthDate().toInstant(), ZoneId.systemDefault()));
 	}
-	
+
 	private void setErrorMessages(Map<String, String> errors) {
 		Set<String> fields = errors.keySet();
-		
-		if(fields.contains("name")) {
+
+		if (fields.contains("name")) {
 			labelErrorName.setText(errors.get("name"));
 		}
 	}
