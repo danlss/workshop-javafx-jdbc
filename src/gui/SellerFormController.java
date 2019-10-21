@@ -1,9 +1,11 @@
 package gui;
 
 import java.net.URL;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -129,7 +131,7 @@ public class SellerFormController implements Initializable {
 		dataChangeListeners.forEach(listener -> listener.onDataChanged());
 	}
 
-	// pega os dados do form e retorna novo obj
+	// coleta os dados do form e retorna novo obj
 	private Seller getFormData() {
 		Seller obj = new Seller();
 
@@ -143,6 +145,28 @@ public class SellerFormController implements Initializable {
 		}
 		obj.setName(txtName.getText());
 
+		if (txtEmail.getText() == null || txtEmail.getText().trim().equals("")) {
+			exception.addError("email", "Campo não pode ser vazio");
+		}
+		obj.setEmail(txtEmail.getText());
+
+		if (dpBirthDate.getValue() == null) {
+			exception.addError("birthDate", "Campo não pode ser vazio");
+		} 
+		else {
+			// pega a data (do datepicker) independente de localidade
+			Instant instant = Instant.from(dpBirthDate.getValue().atStartOfDay(ZoneId.systemDefault()));
+			obj.setBirthDate(Date.from(instant));
+		}
+
+		if (txtBaseSalary.getText() == null || txtBaseSalary.getText().trim().equals("")) {
+			exception.addError("baseSalary", "Campo não pode ser vazio");
+		}
+		obj.setBaseSalary(Utils.tryParseToDouble(txtBaseSalary.getText()));
+
+		//passa o departamento
+		obj.setDepartment(comboBoxDepartment.getValue());
+		
 		// se na coleção de erros tiver pelo menos um erro
 		if (exception.getErrors().size() > 0) {
 			throw exception;
@@ -167,7 +191,7 @@ public class SellerFormController implements Initializable {
 		Constraints.setTextFieldDouble(txtBaseSalary);
 		Constraints.setTextFieldMaxLength(txtEmail, 60);
 		Utils.formatDatePicker(dpBirthDate, "dd/MM/yyyy");
-		
+
 		initializeComboBoxDepartment();
 	}
 
@@ -188,14 +212,14 @@ public class SellerFormController implements Initializable {
 		// exibe data local no fuso-horario do usuario (formato)
 		if (entity.getBirthDate() != null)
 			dpBirthDate.setValue(LocalDate.ofInstant(entity.getBirthDate().toInstant(), ZoneId.systemDefault()));
-		
-		//vendedor novo
-		if(entity.getDepartment() == null) {
-			//pega o primeiro elemento do ComboBox
+
+		// vendedor novo
+		if (entity.getDepartment() == null) {
+			// pega o primeiro elemento do ComboBox
 			comboBoxDepartment.getSelectionModel().selectFirst();
 		}
-		
-		//o departamento associado ao vendedor vai pra comboBox
+
+		// o departamento associado ao vendedor vai pra comboBox
 		comboBoxDepartment.setValue(entity.getDepartment());
 	}
 
@@ -212,12 +236,17 @@ public class SellerFormController implements Initializable {
 		comboBoxDepartment.setItems(obsList);
 	}
 
+	// testa cada um dos erros e seta a label do erro correspondente
 	private void setErrorMessages(Map<String, String> errors) {
 		Set<String> fields = errors.keySet();
 
-		if (fields.contains("name")) {
-			labelErrorName.setText(errors.get("name"));
-		}
+		labelErrorName.setText((fields.contains("name") ? errors.get("name") : ""));
+
+		labelErrorEmail.setText((fields.contains("email") ? errors.get("email") : ""));
+
+		labelErrorBaseSalary.setText((fields.contains("baseSalary") ? errors.get("baseSalary") : ""));
+		
+		labelErrorBirthDate.setText((fields.contains("birthDate") ? errors.get("birthDate") : ""));
 	}
 
 	private void initializeComboBoxDepartment() {
