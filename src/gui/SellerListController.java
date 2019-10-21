@@ -32,6 +32,7 @@ import javafx.scene.layout.Pane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import model.entities.Seller;
+import model.services.DepartmentService;
 import model.services.SellerService;
 
 //classe que recebe o evento emitido pela classe FormController (observer)
@@ -135,7 +136,10 @@ public class SellerListController implements Initializable, DataChangeListener {
 			// injeta o departamento no controlador
 			controller.setSeller(obj);
 			// injeçao dependencia departmentService
-			controller.setDerpartmentService(new SellerService());
+			controller.setServices(new SellerService(), new DepartmentService());
+			
+			//associa lista de departamentos a ComboBox
+			controller.loadAssociatedObjects();
 
 			// escuta o evento do método [this = este objeto desta classe]
 			// se inscreve para receber o evento e quando o evento for disparado executa o
@@ -157,6 +161,7 @@ public class SellerListController implements Initializable, DataChangeListener {
 			dialogStage.initModality(Modality.WINDOW_MODAL); // enquanto nao fechar nao pode acessar a janela anterior
 			dialogStage.showAndWait();
 		} catch (IOException e) {
+			e.printStackTrace();
 			Alerts.showAlert("IO Exception", "Error loading view", e.getMessage(), AlertType.ERROR);
 		}
 	}
